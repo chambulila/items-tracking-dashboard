@@ -3,30 +3,108 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $title ?? 'Tracking Admin' }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="color-scheme" content="light">
+    <title>{{ $title ?? trim($__env->yieldContent('title', 'Tracking Admin')) }}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-light">
-    <nav class="navbar navbar-expand-lg bg-dark navbar-dark">
-        <div class="container">
-            <a class="navbar-brand" href="{{ route('admin.dashboard') }}">Tracking Admin</a>
-            <div class="navbar-nav">
-                <a class="nav-link" href="{{ route('admin.users') }}">Users</a>
-                <a class="nav-link" href="{{ route('admin.lost-items') }}">Lost</a>
-                <a class="nav-link" href="{{ route('admin.found-items') }}">Found</a>
-                <a class="nav-link" href="{{ route('admin.claims') }}">Claims</a>
-                <a class="nav-link" href="{{ route('admin.matches') }}">Matches</a>
-                <a class="nav-link" href="{{ route('admin.notifications') }}">Notifications</a>
-                <a class="nav-link" href="{{ route('admin.devices') }}">Devices</a>
-                <a class="nav-link" href="{{ route('admin.incidents') }}">Incidents</a>
-                <a class="nav-link" href="{{ route('admin.reports') }}">Reports</a>
+<body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+    @php
+        $navItems = [
+            ['route' => 'admin.dashboard', 'icon' => 'bi-speedometer2', 'label' => 'Dashboard'],
+            ['route' => 'admin.users', 'icon' => 'bi-people', 'label' => 'Users'],
+            ['route' => 'admin.lost-items', 'icon' => 'bi-search', 'label' => 'Lost Items'],
+            ['route' => 'admin.found-items', 'icon' => 'bi-box-seam', 'label' => 'Found Items'],
+            ['route' => 'admin.claims', 'icon' => 'bi-patch-check', 'label' => 'Claims'],
+            ['route' => 'admin.matches', 'icon' => 'bi-shuffle', 'label' => 'Matches'],
+            ['route' => 'admin.notifications', 'icon' => 'bi-bell', 'label' => 'Notifications'],
+            ['route' => 'admin.devices', 'icon' => 'bi-phone', 'label' => 'Devices'],
+            ['route' => 'admin.incidents', 'icon' => 'bi-exclamation-triangle', 'label' => 'Incidents'],
+            ['route' => 'admin.reports', 'icon' => 'bi-bar-chart', 'label' => 'Reports'],
+        ];
+        $pageTitle = trim($__env->yieldContent('title', $title ?? 'Dashboard'));
+    @endphp
+
+    <div class="app-wrapper">
+        <nav class="app-header navbar navbar-expand bg-body">
+            <div class="container-fluid">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" data-lte-toggle="sidebar" href="#" role="button" aria-label="Toggle sidebar">
+                            <i class="bi bi-list"></i>
+                        </a>
+                    </li>
+                    <li class="nav-item d-none d-md-block">
+                        <a href="{{ route('admin.dashboard') }}" class="nav-link">Home</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a href="{{ route('admin.notifications') }}" class="nav-link" aria-label="Notifications">
+                            <i class="bi bi-bell"></i>
+                        </a>
+                    </li>
+                </ul>
             </div>
-        </div>
-    </nav>
-    <main class="container py-4">
-        @yield('content')
-    </main>
+        </nav>
+
+        <aside class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark">
+            <div class="sidebar-brand">
+                <a href="{{ route('admin.dashboard') }}" class="brand-link text-decoration-none">
+                    <span class="brand-image rounded-circle shadow d-inline-flex align-items-center justify-content-center bg-success text-white">
+                        <i class="bi bi-geo-alt-fill"></i>
+                    </span>
+                    <span class="brand-text fw-semibold">Tracking Admin</span>
+                </a>
+            </div>
+
+            <div class="sidebar-wrapper">
+                <nav class="mt-2">
+                    <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="menu">
+                        @foreach ($navItems as $item)
+                            <li class="nav-item">
+                                <a href="{{ route($item['route']) }}" class="nav-link @if (request()->routeIs($item['route'])) active @endif">
+                                    <i class="nav-icon bi {{ $item['icon'] }}"></i>
+                                    <p>{{ $item['label'] }}</p>
+                                </a>
+                            </li>
+                        @endforeach
+                    </ul>
+                </nav>
+            </div>
+        </aside>
+
+        <main class="app-main">
+            <div class="app-content-header">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <h3 class="mb-0">{{ $pageTitle }}</h3>
+                        </div>
+                        <div class="col-sm-6">
+                            <ol class="breadcrumb float-sm-end">
+                                <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Admin</a></li>
+                                <li class="breadcrumb-item active" aria-current="page">{{ $pageTitle }}</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="app-content">
+                <div class="container-fluid">
+                    @yield('content')
+                </div>
+            </div>
+        </main>
+
+        <footer class="app-footer">
+            <div class="float-end d-none d-sm-inline">Lost Items and Incidents</div>
+            <strong>Digital Tracking and Reporting System</strong>
+        </footer>
+    </div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     @stack('scripts')
 </body>

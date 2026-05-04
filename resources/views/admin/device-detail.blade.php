@@ -1,8 +1,16 @@
 @extends('layouts.admin')
 
+@section('title', $device->name)
+
 @section('content')
-    <h1 class="mb-4">{{ $device->name }}</h1>
-    <div id="map" style="height: 420px" class="rounded border bg-white"></div>
+    <div class="card content-card">
+        <div class="card-header">
+            <h3 class="card-title">Latest Device Location</h3>
+        </div>
+        <div class="card-body">
+            <div id="map" style="height: 420px" class="rounded border bg-white"></div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
