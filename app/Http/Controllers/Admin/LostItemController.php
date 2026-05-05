@@ -11,8 +11,10 @@ use App\Models\LostItem;
 use App\Services\AttachmentService;
 use App\Services\AuditLogger;
 use App\Services\MatchingService;
+use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class LostItemController extends Controller
@@ -43,12 +45,28 @@ class LostItemController extends Controller
         return view('admin.lost-items.create', $this->formData(new LostItem));
     }
 
-    public function store(Request $request, AttachmentService $attachments, MatchingService $matching, AuditLogger $auditLogger): RedirectResponse
+    public function store(Request $request, AttachmentService $attachments, MatchingService $matching, AuditLogger $auditLogger, NotificationService $notifications): RedirectResponse
     {
-        $item = $request->user()->lostItems()->create($this->validatedData($request));
-        $attachments->storeMany($item, $request->file('attachments', []), $request->user());
-        $matching->matchLostItem($item);
-        $auditLogger->log('lost_item.created', $request->user(), $item);
+        $item = DB::transaction(function () use ($request, $attachments, $matching, $auditLogger, $notifications): LostItem {
+            $item = $request->user()->lostItems()->create($this->validatedData($request));
+            $attachments->storeMany($item, $request->file('attachments', []), $request->user());
+            $matching->matchLostItem($item);
+            $auditLogger->log('lost_item.created', $request->user(), $item);
+
+            $notifications->notifyPermissionHolders(
+                permissions: ['view-lost-items', 'manage-lost-found'],
+                title: 'New lost item reported',
+                message: "A new lost item has been reported: {$item->name}.",
+                category: 'lost_item',
+                type: 'warning',
+                createdBy: $request->user(),
+                entityType: LostItem::class,
+                entityId: $item->id,
+                actionUrl: route('admin.lost-items.show', $item),
+            );
+
+            return $item;
+        });
 
         return redirect()->route('admin.lost-items.show', $item)->with('status', 'Lost item report submitted.');
     }

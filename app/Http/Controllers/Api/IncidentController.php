@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Incident;
 use App\Services\AttachmentService;
 use App\Services\AuditLogger;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class IncidentController extends Controller
@@ -34,7 +36,7 @@ class IncidentController extends Controller
         return response()->json($incidents);
     }
 
-    public function store(Request $request, AttachmentService $attachments, AuditLogger $auditLogger): JsonResponse
+    public function store(Request $request, AttachmentService $attachments, AuditLogger $auditLogger, NotificationService $notifications): JsonResponse
     {
         $data = $request->validate([
             'incident_category_id' => ['required', 'exists:incident_categories,id'],
@@ -48,14 +50,30 @@ class IncidentController extends Controller
             'attachments.*' => ['file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
         ]);
 
-        $incident = Incident::query()->create([
-            ...$data,
-            'reporter_id' => $request->user()->id,
-            'status' => 'submitted',
-        ]);
-        $incident->updates()->create(['user_id' => $request->user()->id, 'to_status' => 'submitted', 'notes' => 'Incident submitted.']);
-        $attachments->storeMany($incident, $request->file('attachments', []), $request->user());
-        $auditLogger->log('incident.created', $request->user(), $incident);
+        $incident = DB::transaction(function () use ($data, $request, $attachments, $auditLogger, $notifications): Incident {
+            $incident = Incident::query()->create([
+                ...$data,
+                'reporter_id' => $request->user()->id,
+                'status' => 'submitted',
+            ]);
+            $incident->updates()->create(['user_id' => $request->user()->id, 'to_status' => 'submitted', 'notes' => 'Incident submitted.']);
+            $attachments->storeMany($incident, $request->file('attachments', []), $request->user());
+            $auditLogger->log('incident.created', $request->user(), $incident);
+
+            $notifications->notifyPermissionHolders(
+                permissions: ['view-incidents', 'manage-incidents'],
+                title: 'New incident reported',
+                message: 'A new incident has been reported: '.str($incident->description)->limit(80).'.',
+                category: 'incident',
+                type: in_array($incident->severity, ['high', 'critical'], true) ? 'danger' : 'warning',
+                createdBy: $request->user(),
+                entityType: Incident::class,
+                entityId: $incident->id,
+                actionUrl: route('admin.incidents.show', $incident),
+            );
+
+            return $incident;
+        });
 
         return response()->json($incident->load(['updates', 'attachments']), 201);
     }

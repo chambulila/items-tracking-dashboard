@@ -31,3 +31,101 @@
     justify-content: center;
     width: 3rem;
 }
+
+.notification-panel-backdrop {
+    background: rgba(15, 23, 42, 0.35);
+    inset: 0;
+    position: fixed;
+    z-index: 1040;
+}
+
+.notification-panel {
+    background: #f8fafc;
+    border-left: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: -1rem 0 2.5rem rgba(15, 23, 42, 0.18);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    max-width: 100%;
+    position: fixed;
+    right: 0;
+    top: 0;
+    transform: translateX(100%);
+    transition: transform 180ms ease-in-out;
+    width: 27rem;
+    z-index: 1050;
+}
+
+.notification-panel.is-open {
+    transform: translateX(0);
+}
+
+.notification-panel-header,
+.notification-panel-toolbar {
+    align-items: center;
+    background: #fff;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+}
+
+.notification-panel-body {
+    overflow-y: auto;
+    padding: 1.25rem;
+}
+
+.notification-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.notification-item {
+    background: #fff;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 1rem;
+    box-shadow: 0 0.35rem 1rem rgba(15, 23, 42, 0.06);
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: auto 1fr;
+    padding: 0.9rem;
+}
+
+.notification-item.is-unread {
+    background: #ecfdf5;
+    border-color: rgba(31, 95, 84, 0.25);
+}
+
+.notification-avatar {
+    align-items: center;
+    background: var(--tracking-brand);
+    border-radius: 999px;
+    color: #fff;
+    display: inline-flex;
+    font-size: 0.78rem;
+    font-weight: 700;
+    height: 2.35rem;
+    justify-content: center;
+    width: 2.35rem;
+}
+
+.notification-message {
+    color: #334155;
+    font-size: 0.92rem;
+}
+
+.notification-meta {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.notification-empty {
+    background: rgba(255, 255, 255, 0.75);
+    border: 1px dashed rgba(15, 23, 42, 0.16);
+    border-radius: 1rem;
+    color: #64748b;
+    padding: 1rem;
+    text-align: center;
+}

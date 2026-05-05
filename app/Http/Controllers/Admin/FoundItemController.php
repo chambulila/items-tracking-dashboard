@@ -11,8 +11,10 @@ use App\Models\ItemCategory;
 use App\Services\AttachmentService;
 use App\Services\AuditLogger;
 use App\Services\MatchingService;
+use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class FoundItemController extends Controller
@@ -43,12 +45,28 @@ class FoundItemController extends Controller
         return view('admin.found-items.create', $this->formData(new FoundItem));
     }
 
-    public function store(Request $request, AttachmentService $attachments, MatchingService $matching, AuditLogger $auditLogger): RedirectResponse
+    public function store(Request $request, AttachmentService $attachments, MatchingService $matching, AuditLogger $auditLogger, NotificationService $notifications): RedirectResponse
     {
-        $item = $request->user()->foundItems()->create($this->validatedData($request));
-        $attachments->storeMany($item, $request->file('attachments', []), $request->user());
-        $matching->matchFoundItem($item);
-        $auditLogger->log('found_item.created', $request->user(), $item);
+        $item = DB::transaction(function () use ($request, $attachments, $matching, $auditLogger, $notifications): FoundItem {
+            $item = $request->user()->foundItems()->create($this->validatedData($request));
+            $attachments->storeMany($item, $request->file('attachments', []), $request->user());
+            $matching->matchFoundItem($item);
+            $auditLogger->log('found_item.created', $request->user(), $item);
+
+            $notifications->notifyPermissionHolders(
+                permissions: ['view-found-items', 'manage-lost-found'],
+                title: 'New found item reported',
+                message: "A new found item has been reported: {$item->name}.",
+                category: 'found_item',
+                type: 'success',
+                createdBy: $request->user(),
+                entityType: FoundItem::class,
+                entityId: $item->id,
+                actionUrl: route('admin.found-items.show', $item),
+            );
+
+            return $item;
+        });
 
         return redirect()->route('admin.found-items.show', $item)->with('status', 'Found item report submitted.');
     }

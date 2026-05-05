@@ -10,8 +10,10 @@ use App\Models\LostItem;
 use App\Services\AttachmentService;
 use App\Services\AuditLogger;
 use App\Services\MatchingService;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class LostFoundController extends Controller
@@ -32,24 +34,56 @@ class LostFoundController extends Controller
             ->paginate(20));
     }
 
-    public function storeLost(Request $request, AttachmentService $attachments, MatchingService $matching): JsonResponse
+    public function storeLost(Request $request, AttachmentService $attachments, MatchingService $matching, NotificationService $notifications): JsonResponse
     {
-        $data = $this->itemData($request, 'lost_date');
-        $item = $request->user()->lostItems()->create($data);
+        $item = DB::transaction(function () use ($request, $attachments, $matching, $notifications): LostItem {
+            $data = $this->itemData($request, 'lost_date');
+            $item = $request->user()->lostItems()->create($data);
 
-        $attachments->storeMany($item, $request->file('attachments', []), $request->user());
-        $matching->matchLostItem($item);
+            $attachments->storeMany($item, $request->file('attachments', []), $request->user());
+            $matching->matchLostItem($item);
+
+            $notifications->notifyPermissionHolders(
+                permissions: ['view-lost-items', 'manage-lost-found'],
+                title: 'New lost item reported',
+                message: "A new lost item has been reported: {$item->name}.",
+                category: 'lost_item',
+                type: 'warning',
+                createdBy: $request->user(),
+                entityType: LostItem::class,
+                entityId: $item->id,
+                actionUrl: route('admin.lost-items.show', $item),
+            );
+
+            return $item;
+        });
 
         return response()->json($item->load(['category', 'campus', 'attachments', 'matches']), 201);
     }
 
-    public function storeFound(Request $request, AttachmentService $attachments, MatchingService $matching): JsonResponse
+    public function storeFound(Request $request, AttachmentService $attachments, MatchingService $matching, NotificationService $notifications): JsonResponse
     {
-        $data = $this->itemData($request, 'found_date');
-        $item = $request->user()->foundItems()->create($data);
+        $item = DB::transaction(function () use ($request, $attachments, $matching, $notifications): FoundItem {
+            $data = $this->itemData($request, 'found_date');
+            $item = $request->user()->foundItems()->create($data);
 
-        $attachments->storeMany($item, $request->file('attachments', []), $request->user());
-        $matching->matchFoundItem($item);
+            $attachments->storeMany($item, $request->file('attachments', []), $request->user());
+            $matching->matchFoundItem($item);
+
+            $notifications->notifyPermissionHolders(
+                permissions: ['view-found-items', 'manage-lost-found'],
+                title: 'New found item reported',
+                message: "A new found item has been reported: {$item->name}.",
+                category: 'found_item',
+                type: 'success',
+                createdBy: $request->user(),
+                entityType: FoundItem::class,
+                entityId: $item->id,
+                actionUrl: route('admin.found-items.show', $item),
+            );
+
+            return $item;
+        });
 
         return response()->json($item->load(['category', 'campus', 'attachments', 'matches']), 201);
     }

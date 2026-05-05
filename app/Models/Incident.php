@@ -49,6 +49,11 @@ class Incident extends Model
         return $this->belongsTo(Campus::class);
     }
 
+    public function building(): BelongsTo
+    {
+        return $this->belongsTo(Building::class);
+    }
+
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');

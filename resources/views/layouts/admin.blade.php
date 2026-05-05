@@ -44,9 +44,10 @@
                         <span class="nav-link">{{ auth()->user()->name }}</span>
                     </li>
                     <li class="nav-item">
-                        <a href="{{ route('admin.notifications') }}" class="nav-link" aria-label="Notifications">
+                        <button type="button" id="notificationPanelToggle" class="btn nav-link border-0 position-relative" aria-label="Notifications">
                             <i class="bi bi-bell"></i>
-                        </a>
+                            <span id="notificationUnreadBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger d-none">0</span>
+                        </button>
                     </li>
                     <li class="nav-item">
                         <form method="POST" action="{{ route('logout') }}">
@@ -125,7 +126,19 @@
         </footer>
     </div>
 
+    @include('admin.partials.notification-panel')
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        window.notificationRoutes = {
+            feed: @json(route('admin.notifications.feed')),
+            unreadCount: @json(route('admin.notifications.unread-count')),
+            markRead: @json(route('admin.notifications.read', ['notification' => '__ID__'])),
+            markAllRead: @json(route('admin.notifications.read-all')),
+            index: @json(route('admin.notifications')),
+            csrf: @json(csrf_token()),
+        };
+    </script>
     @stack('scripts')
 </body>
 </html>

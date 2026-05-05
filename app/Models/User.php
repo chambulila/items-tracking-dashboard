@@ -4,11 +4,12 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class User extends Authenticatable
@@ -73,6 +74,18 @@ class User extends Authenticatable
     public function hasRole(string ...$roles): bool
     {
         return $this->roles->pluck('name')->intersect($roles)->isNotEmpty();
+    }
+
+    public function hasPermission(string ...$permissions): bool
+    {
+        return $this->permissionNames()->intersect($permissions)->isNotEmpty();
+    }
+
+    public function permissionNames(): Collection
+    {
+        $this->loadMissing('roles.permissions');
+
+        return $this->roles->flatMap->permissions->pluck('name')->unique()->values();
     }
 
     public function isPrivileged(): bool

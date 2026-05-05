@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Campus;
 use App\Models\IncidentCategory;
 use App\Models\ItemCategory;
+use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -19,6 +20,38 @@ class DatabaseSeeder extends Seeder
             'security_officer' => 'Security Officer',
             'administrator' => 'Administrator',
         ])->each(fn (string $label, string $name) => Role::query()->firstOrCreate(['name' => $name], ['label' => $label]));
+
+        $permissions = collect([
+            'view-lost-items' => 'View lost items',
+            'view-found-items' => 'View found items',
+            'manage-lost-found' => 'Manage lost and found',
+            'view-incidents' => 'View incidents',
+            'manage-incidents' => 'Manage incidents',
+        ])->mapWithKeys(fn (string $label, string $name) => [
+            $name => Permission::query()->firstOrCreate(['name' => $name], ['label' => $label]),
+        ]);
+
+        Role::query()->where('name', 'administrator')->first()
+            ?->permissions()
+            ->syncWithoutDetaching($permissions->pluck('id')->all());
+
+        Role::query()->where('name', 'security_officer')->first()
+            ?->permissions()
+            ->syncWithoutDetaching($permissions->only([
+                'view-lost-items',
+                'view-found-items',
+                'manage-lost-found',
+                'view-incidents',
+                'manage-incidents',
+            ])->pluck('id')->all());
+
+        Role::query()->where('name', 'staff')->first()
+            ?->permissions()
+            ->syncWithoutDetaching($permissions->only([
+                'view-lost-items',
+                'view-found-items',
+                'view-incidents',
+            ])->pluck('id')->all());
 
         collect([
             ['name' => 'Laptop', 'is_electronic' => true],
