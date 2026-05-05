@@ -1,6 +1,6 @@
 <div class="row g-3">
     <div class="col-lg-8">
-        <div class="card content-card">
+        <div class="card card-outline card-primary">
             <div class="card-header d-flex align-items-center">
                 <h3 class="card-title mb-0">{{ $item->name }}</h3>
                 <span class="badge text-bg-secondary ms-auto">{{ str($item->status)->replace('_', ' ')->title() }}</span>
@@ -19,7 +19,7 @@
                     <dt class="col-sm-3">Reporter</dt><dd class="col-sm-9">{{ $type === 'lost' ? $item->user->name : $item->finder->name }}</dd>
                 </dl>
             </div>
-            @if ($type === 'lost' && $item->status === 'open' && (auth()->user()->isPrivileged() || auth()->id() === $item->user_id))
+            @if ($type === 'lost' && $item->status === 'open' && (auth()->user()->hasPermission('manage-lost-found') || auth()->id() === $item->user_id))
                 <div class="card-footer">
                     <form method="POST" action="{{ route('admin.lost-items.recovered', $item) }}">
                         @csrf
@@ -30,7 +30,7 @@
             @endif
         </div>
 
-        <div class="card content-card mt-3">
+        <div class="card card-outline card-primary mt-3">
             <div class="card-header"><h3 class="card-title">Attachments</h3></div>
             <div class="card-body">
                 @forelse ($item->attachments as $attachment)
@@ -46,7 +46,7 @@
 
     <div class="col-lg-4">
         @if ($type === 'found')
-            <div class="card content-card">
+            <div class="card card-outline card-primary">
                 <div class="card-header"><h3 class="card-title">Submit Claim</h3></div>
                 <div class="card-body">
                     @if ($item->status === 'unclaimed' && auth()->id() !== $item->finder_id)
@@ -63,14 +63,14 @@
                 </div>
             </div>
 
-            <div class="card content-card mt-3">
+            <div class="card card-outline card-primary mt-3">
                 <div class="card-header"><h3 class="card-title">Claims</h3></div>
                 <div class="card-body">
                     @forelse ($item->claims as $claim)
                         <div class="border-bottom pb-2 mb-2">
                             <div class="fw-semibold">{{ $claim->claimant->name }} <span class="badge text-bg-secondary">{{ $claim->status }}</span></div>
                             <div class="small text-muted">{{ $claim->proof_description }}</div>
-                            @if (auth()->user()->isPrivileged() && $claim->status === 'pending')
+                            @if (auth()->user()->hasPermission('verify-claims', 'manage-lost-found') && $claim->status === 'pending')
                                 <div class="mt-2">@include('admin.claims.partials.verify-buttons', ['claim' => $claim])</div>
                             @endif
                         </div>
@@ -81,7 +81,7 @@
             </div>
         @endif
 
-        <div class="card content-card">
+        <div class="card card-outline card-primary">
             <div class="card-header"><h3 class="card-title">Possible Matches</h3></div>
             <div class="card-body">
                 @forelse ($item->matches->sortByDesc('score') as $match)

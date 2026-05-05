@@ -22,10 +22,15 @@ beforeEach(function (): void {
 
     $this->permissions = collect([
         'view-lost-items',
+        'create-lost-items',
         'view-found-items',
+        'create-found-items',
         'manage-lost-found',
         'view-incidents',
+        'create-incidents',
         'manage-incidents',
+        'view-notifications',
+        'manage-notifications',
     ])->mapWithKeys(fn (string $name) => [
         $name => Permission::query()->create(['name' => $name, 'label' => str($name)->replace('-', ' ')->title()->toString()]),
     ]);
@@ -40,11 +45,15 @@ beforeEach(function (): void {
 
     Role::query()->where('name', 'staff')->first()
         ->permissions()
-        ->attach($this->permissions->only(['view-lost-items', 'view-found-items', 'view-incidents'])->pluck('id'));
+        ->attach($this->permissions->only(['view-lost-items', 'view-found-items', 'view-incidents', 'view-notifications', 'manage-notifications'])->pluck('id'));
 
     Role::query()->where('name', 'lost_auditor')->first()
         ->permissions()
         ->attach($this->permissions->only(['view-lost-items'])->pluck('id'));
+
+    Role::query()->where('name', 'student')->first()
+        ->permissions()
+        ->attach($this->permissions->only(['create-lost-items', 'create-found-items', 'create-incidents'])->pluck('id'));
 
     $this->campus = Campus::query()->create(['name' => 'Main Campus']);
     $this->building = $this->campus->buildings()->create(['name' => 'Library']);

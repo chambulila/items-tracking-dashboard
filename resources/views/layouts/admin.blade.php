@@ -12,16 +12,17 @@
 <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
     @php
         $navItems = [
-            ['route' => 'admin.dashboard', 'icon' => 'bi-speedometer2', 'label' => 'Dashboard'],
-            ['route' => 'admin.users.index', 'pattern' => 'admin.users.*', 'icon' => 'bi-people', 'label' => 'Users', 'role' => 'administrator'],
-            ['route' => 'admin.lost-items', 'pattern' => 'admin.lost-items*', 'icon' => 'bi-search', 'label' => 'Lost Items'],
-            ['route' => 'admin.found-items', 'pattern' => 'admin.found-items*', 'icon' => 'bi-box-seam', 'label' => 'Found Items'],
-            ['route' => 'admin.claims', 'pattern' => 'admin.claims*', 'icon' => 'bi-patch-check', 'label' => 'Claims'],
-            ['route' => 'admin.matches', 'icon' => 'bi-shuffle', 'label' => 'Matches'],
-            ['route' => 'admin.notifications', 'icon' => 'bi-bell', 'label' => 'Notifications'],
-            ['route' => 'admin.devices', 'icon' => 'bi-phone', 'label' => 'Devices'],
-            ['route' => 'admin.incidents', 'icon' => 'bi-exclamation-triangle', 'label' => 'Incidents'],
-            ['route' => 'admin.reports', 'icon' => 'bi-bar-chart', 'label' => 'Reports'],
+            ['route' => 'admin.dashboard', 'icon' => 'bi-speedometer2', 'label' => 'Dashboard', 'permission' => ['view-dashboard']],
+            ['route' => 'admin.users.index', 'pattern' => 'admin.users.*', 'icon' => 'bi-people', 'label' => 'Users', 'permission' => ['manage-users']],
+            ['route' => 'admin.role-permissions.index', 'pattern' => 'admin.role-permissions.*', 'icon' => 'bi-shield-lock', 'label' => 'Role Permissions', 'permission' => ['manage-role-permissions']],
+            ['route' => 'admin.lost-items', 'pattern' => 'admin.lost-items*', 'icon' => 'bi-search', 'label' => 'Lost Items', 'permission' => ['view-lost-items']],
+            ['route' => 'admin.found-items', 'pattern' => 'admin.found-items*', 'icon' => 'bi-box-seam', 'label' => 'Found Items', 'permission' => ['view-found-items']],
+            ['route' => 'admin.claims', 'pattern' => 'admin.claims*', 'icon' => 'bi-patch-check', 'label' => 'Claims', 'permission' => ['view-claims', 'verify-claims', 'manage-lost-found']],
+            ['route' => 'admin.matches', 'icon' => 'bi-shuffle', 'label' => 'Matches', 'permission' => ['view-matches', 'manage-lost-found']],
+            ['route' => 'admin.notifications', 'icon' => 'bi-bell', 'label' => 'Notifications', 'permission' => ['view-notifications']],
+            ['route' => 'admin.devices', 'icon' => 'bi-phone', 'label' => 'Devices', 'permission' => ['view-devices']],
+            ['route' => 'admin.incidents', 'icon' => 'bi-exclamation-triangle', 'label' => 'Incidents', 'permission' => ['view-incidents']],
+            ['route' => 'admin.reports', 'icon' => 'bi-bar-chart', 'label' => 'Reports', 'permission' => ['view-analytics']],
         ];
         $pageTitle = trim($__env->yieldContent('title', $title ?? 'Dashboard'));
     @endphp
@@ -75,7 +76,7 @@
                 <nav class="mt-2">
                     <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="menu">
                         @foreach ($navItems as $item)
-                            @continue(isset($item['role']) && ! auth()->user()->hasRole($item['role']))
+                            @continue(isset($item['permission']) && ! auth()->user()->hasPermission(...$item['permission']))
                             <li class="nav-item">
                                 <a href="{{ route($item['route']) }}" class="nav-link @if (request()->routeIs($item['pattern'] ?? $item['route'])) active @endif">
                                     <i class="nav-icon bi {{ $item['icon'] }}"></i>

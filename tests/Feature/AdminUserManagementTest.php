@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\AuditLog;
+use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -12,6 +13,13 @@ beforeEach(function (): void {
     foreach (['student' => 'Student', 'staff' => 'Staff', 'security_officer' => 'Security Officer', 'administrator' => 'Administrator'] as $name => $label) {
         Role::query()->create(['name' => $name, 'label' => $label]);
     }
+
+    $permissions = collect(['view-dashboard', 'manage-users', 'assign-roles'])
+        ->mapWithKeys(fn (string $name) => [$name => Permission::query()->create(['name' => $name, 'label' => str($name)->replace('-', ' ')->title()->toString()])]);
+
+    Role::query()->where('name', 'administrator')->first()
+        ->permissions()
+        ->attach($permissions->pluck('id'));
 });
 
 function webUserWithRole(string $role): User
@@ -39,7 +47,7 @@ it('uses laravel web authentication for the admin dashboard', function (): void 
     $this->assertGuest();
 });
 
-it('only administrators can access user management screens', function (): void {
+it('only users with user management permission can access user management screens', function (): void {
     $student = webUserWithRole('student');
     $admin = webUserWithRole('administrator');
 
@@ -48,7 +56,7 @@ it('only administrators can access user management screens', function (): void {
     $this->actingAs($admin)->get(route('admin.users.index'))->assertSuccessful();
 });
 
-it('allows administrators to create users and assign roles', function (): void {
+it('allows permitted users to create users and assign roles', function (): void {
     $admin = webUserWithRole('administrator');
     $staffRole = Role::query()->where('name', 'staff')->first();
 
@@ -68,7 +76,7 @@ it('allows administrators to create users and assign roles', function (): void {
         ->and(AuditLog::query()->where('action', 'user.created')->where('user_id', $admin->id)->exists())->toBeTrue();
 });
 
-it('allows administrators to update users and replace assigned roles', function (): void {
+it('allows permitted users to update users and replace assigned roles', function (): void {
     $admin = webUserWithRole('administrator');
     $user = webUserWithRole('student');
     $securityRole = Role::query()->where('name', 'security_officer')->first();
@@ -90,7 +98,7 @@ it('allows administrators to update users and replace assigned roles', function 
         ->and(AuditLog::query()->where('action', 'user.updated')->where('user_id', $admin->id)->exists())->toBeTrue();
 });
 
-it('allows administrators to delete other users but not themselves', function (): void {
+it('allows permitted users to delete other users but not themselves', function (): void {
     $admin = webUserWithRole('administrator');
     $user = webUserWithRole('student');
 

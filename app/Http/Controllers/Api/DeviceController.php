@@ -14,7 +14,7 @@ class DeviceController extends Controller
     {
         $devices = Device::query()
             ->with('latestLocation')
-            ->when(! $request->user()->isPrivileged(), fn ($query) => $query->where('user_id', $request->user()->id))
+            ->when(! $request->user()->hasPermission('manage-devices'), fn ($query) => $query->where('user_id', $request->user()->id))
             ->latest()
             ->paginate(20);
 
@@ -103,6 +103,6 @@ class DeviceController extends Controller
 
     private function authorizeDevice(Request $request, Device $device): void
     {
-        abort_if(! $request->user()->isPrivileged() && $device->user_id !== $request->user()->id, 403);
+        abort_if(! $request->user()->hasPermission('manage-devices') && $device->user_id !== $request->user()->id, 403);
     }
 }

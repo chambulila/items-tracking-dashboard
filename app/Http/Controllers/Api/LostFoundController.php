@@ -21,7 +21,7 @@ class LostFoundController extends Controller
     public function lostIndex(Request $request): JsonResponse
     {
         return response()->json($this->filterItems(LostItem::query()->with(['category', 'campus', 'attachments']), $request)
-            ->when(! $request->user()->isPrivileged(), fn ($query) => $query->where('user_id', $request->user()->id))
+            ->when(! $request->user()->hasPermission('manage-lost-found'), fn ($query) => $query->where('user_id', $request->user()->id))
             ->latest()
             ->paginate(20));
     }
@@ -29,7 +29,7 @@ class LostFoundController extends Controller
     public function foundIndex(Request $request): JsonResponse
     {
         return response()->json($this->filterItems(FoundItem::query()->with(['category', 'campus', 'attachments']), $request)
-            ->when(! $request->user()->isPrivileged(), fn ($query) => $query->where('finder_id', $request->user()->id))
+            ->when(! $request->user()->hasPermission('manage-lost-found'), fn ($query) => $query->where('finder_id', $request->user()->id))
             ->latest()
             ->paginate(20));
     }

@@ -71,11 +71,6 @@ class User extends Authenticatable
         return $this->hasMany(Notification::class);
     }
 
-    public function hasRole(string ...$roles): bool
-    {
-        return $this->roles->pluck('name')->intersect($roles)->isNotEmpty();
-    }
-
     public function hasPermission(string ...$permissions): bool
     {
         return $this->permissionNames()->intersect($permissions)->isNotEmpty();
@@ -86,11 +81,6 @@ class User extends Authenticatable
         $this->loadMissing('roles.permissions');
 
         return $this->roles->flatMap->permissions->pluck('name')->unique()->values();
-    }
-
-    public function isPrivileged(): bool
-    {
-        return $this->hasRole('administrator', 'security_officer');
     }
 
     public function refreshApiToken(): string

@@ -3,7 +3,7 @@
 @section('title', 'Notifications')
 
 @section('content')
-    <div class="card content-card">
+    <div class="card card-outline card-primary">
         <div class="card-header d-flex align-items-center justify-content-between">
             <h3 class="card-title mb-0">My Notifications</h3>
             <button type="button" class="btn btn-sm btn-outline-success" id="notificationPanelTogglePage">Open activity panel</button>

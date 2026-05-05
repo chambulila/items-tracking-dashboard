@@ -27,7 +27,7 @@ class IncidentController extends Controller
     {
         $incidents = Incident::query()
             ->with(['category', 'campus', 'assignee'])
-            ->when(! $request->user()->isPrivileged(), fn ($query) => $query->where('reporter_id', $request->user()->id))
+            ->when(! $request->user()->hasPermission('manage-incidents'), fn ($query) => $query->where('reporter_id', $request->user()->id))
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
             ->when($request->filled('campus_id'), fn ($query) => $query->where('campus_id', $request->integer('campus_id')))
             ->latest()
@@ -87,7 +87,7 @@ class IncidentController extends Controller
 
     public function updateStatus(Request $request, Incident $incident, AuditLogger $auditLogger): JsonResponse
     {
-        abort_if(! $request->user()->isPrivileged(), 403);
+        abort_if(! $request->user()->hasPermission('manage-incidents'), 403);
 
         $data = $request->validate([
             'status' => ['required', Rule::in(Incident::STATUSES)],
@@ -120,6 +120,6 @@ class IncidentController extends Controller
 
     private function authorizeIncident(Request $request, Incident $incident): void
     {
-        abort_if(! $request->user()->isPrivileged() && $incident->reporter_id !== $request->user()->id, 403);
+        abort_if(! $request->user()->hasPermission('manage-incidents') && $incident->reporter_id !== $request->user()->id, 403);
     }
 }

@@ -11,6 +11,7 @@ use App\Models\ItemClaim;
 use App\Models\ItemMatch;
 use App\Models\LostItem;
 use App\Models\Notification;
+use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -23,6 +24,58 @@ beforeEach(function (): void {
     foreach (['student', 'staff', 'security_officer', 'administrator'] as $role) {
         Role::query()->create(['name' => $role, 'label' => str($role)->replace('_', ' ')->title()->toString()]);
     }
+
+    $permissions = collect([
+        'view-references',
+        'view-lost-items',
+        'create-lost-items',
+        'view-found-items',
+        'create-found-items',
+        'claim-found-items',
+        'verify-claims',
+        'view-matches',
+        'manage-lost-found',
+        'view-devices',
+        'manage-devices',
+        'view-incidents',
+        'create-incidents',
+        'manage-incidents',
+        'view-notifications',
+        'manage-notifications',
+        'view-analytics',
+        'manage-users',
+        'assign-roles',
+    ])->mapWithKeys(fn (string $name) => [$name => Permission::query()->create(['name' => $name, 'label' => str($name)->replace('-', ' ')->title()->toString()])]);
+
+    Role::query()->where('name', 'student')->first()
+        ->permissions()
+        ->attach($permissions->only([
+            'view-references',
+            'create-lost-items',
+            'create-found-items',
+            'claim-found-items',
+            'view-devices',
+            'manage-devices',
+            'view-incidents',
+            'create-incidents',
+            'view-notifications',
+            'manage-notifications',
+        ])->pluck('id'));
+
+    Role::query()->where('name', 'security_officer')->first()
+        ->permissions()
+        ->attach($permissions->only([
+            'verify-claims',
+            'view-matches',
+            'manage-lost-found',
+            'view-incidents',
+            'manage-incidents',
+            'view-analytics',
+        ])->pluck('id'));
+
+    Role::query()->where('name', 'administrator')->first()
+        ->permissions()
+        ->attach($permissions->pluck('id'));
 
     $this->campus = Campus::query()->create(['name' => 'Main Campus']);
     $this->building = $this->campus->buildings()->create(['name' => 'Library']);

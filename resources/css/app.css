@@ -1,37 +1,5 @@
 @import 'admin-lte/dist/css/adminlte.min.css';
 
-:root {
-    --tracking-brand: #1f5f54;
-}
-
-.brand-link .brand-text {
-    letter-spacing: 0.01em;
-}
-
-.app-sidebar .nav-link.active {
-    background-color: var(--tracking-brand);
-    color: #fff;
-}
-
-.content-card {
-    border: 0;
-    box-shadow: 0 0.125rem 0.5rem rgba(15, 23, 42, 0.08);
-}
-
-.table td,
-.table th {
-    vertical-align: middle;
-}
-
-.tracking-stat-icon {
-    align-items: center;
-    border-radius: 999px;
-    display: inline-flex;
-    height: 3rem;
-    justify-content: center;
-    width: 3rem;
-}
-
 .notification-panel-backdrop {
     background: rgba(15, 23, 42, 0.35);
     inset: 0;
@@ -98,7 +66,7 @@
 
 .notification-avatar {
     align-items: center;
-    background: var(--tracking-brand);
+    background: #1f5f54;
     border-radius: 999px;
     color: #fff;
     display: inline-flex;

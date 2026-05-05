@@ -84,7 +84,7 @@ class LostItemController extends Controller
 
     public function markRecovered(Request $request, LostItem $lostItem, AuditLogger $auditLogger): RedirectResponse
     {
-        abort_if(! $request->user()->isPrivileged() && $lostItem->user_id !== $request->user()->id, 403);
+        abort_if(! $request->user()->hasPermission('manage-lost-found') && $lostItem->user_id !== $request->user()->id, 403);
 
         $lostItem->update(['status' => 'recovered']);
         $auditLogger->log('lost_item.recovered', $request->user(), $lostItem);

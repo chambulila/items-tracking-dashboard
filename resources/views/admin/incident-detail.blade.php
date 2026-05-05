@@ -5,7 +5,7 @@
 @section('content')
     <div class="row g-3">
         <div class="col-lg-8">
-            <div class="card content-card">
+            <div class="card card-outline card-primary">
                 <div class="card-header d-flex align-items-center justify-content-between">
                     <h3 class="card-title mb-0">{{ $incident->category->name }}</h3>
                     <span class="badge text-bg-{{ in_array($incident->severity, ['high', 'critical'], true) ? 'danger' : 'warning' }}">
@@ -35,7 +35,7 @@
         </div>
 
         <div class="col-lg-4">
-            <div class="card content-card mb-3">
+            <div class="card card-outline card-primary mb-3">
                 <div class="card-header"><h3 class="card-title mb-0">Status History</h3></div>
                 <div class="list-group list-group-flush">
                     @forelse ($incident->updates as $update)
@@ -52,7 +52,7 @@
                 </div>
             </div>
 
-            <div class="card content-card">
+            <div class="card card-outline card-primary">
                 <div class="card-header"><h3 class="card-title mb-0">Attachments</h3></div>
                 <div class="list-group list-group-flush">
                     @forelse ($incident->attachments as $attachment)

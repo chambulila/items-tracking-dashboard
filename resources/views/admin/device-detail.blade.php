@@ -3,12 +3,14 @@
 @section('title', $device->name)
 
 @section('content')
-    <div class="card content-card">
+    <div class="card card-outline card-primary">
         <div class="card-header">
             <h3 class="card-title">Latest Device Location</h3>
         </div>
         <div class="card-body">
-            <div id="map" style="height: 420px" class="rounded border bg-white"></div>
+            <div class="ratio ratio-21x9">
+                <div id="map" class="rounded border bg-white"></div>
+            </div>
         </div>
     </div>
 @endsection

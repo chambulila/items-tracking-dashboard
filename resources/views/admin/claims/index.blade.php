@@ -3,7 +3,7 @@
 @section('title', 'Claims')
 
 @section('content')
-    <div class="card content-card">
+    <div class="card card-outline card-primary">
         <div class="card-header"><h3 class="card-title">Claim Verification Queue</h3></div>
         <div class="card-body table-responsive p-0">
             <table class="table table-striped mb-0">
@@ -16,7 +16,7 @@
                             <td><span class="badge text-bg-secondary">{{ str($claim->status)->title() }}</span></td>
                             <td>{{ $claim->proof_description }}</td>
                             <td>
-                                @if (auth()->user()->isPrivileged() && $claim->status === 'pending')
+                                @if (auth()->user()->hasPermission('verify-claims', 'manage-lost-found') && $claim->status === 'pending')
                                     @include('admin.claims.partials.verify-buttons', ['claim' => $claim])
                                 @else
                                     {{ $claim->decision_notes ?? '-' }}

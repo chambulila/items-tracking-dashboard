@@ -7,6 +7,7 @@ use App\Models\ItemCategory;
 use App\Models\ItemClaim;
 use App\Models\ItemMatch;
 use App\Models\LostItem;
+use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -20,6 +21,68 @@ beforeEach(function (): void {
     foreach (['student' => 'Student', 'staff' => 'Staff', 'security_officer' => 'Security Officer', 'administrator' => 'Administrator'] as $name => $label) {
         Role::query()->create(['name' => $name, 'label' => $label]);
     }
+
+    $permissions = collect([
+        'view-dashboard',
+        'view-lost-items',
+        'create-lost-items',
+        'update-lost-items',
+        'view-found-items',
+        'create-found-items',
+        'claim-found-items',
+        'verify-claims',
+        'view-claims',
+        'view-matches',
+        'manage-lost-found',
+        'view-notifications',
+        'manage-notifications',
+    ])->mapWithKeys(fn (string $name) => [$name => Permission::query()->create(['name' => $name, 'label' => str($name)->replace('-', ' ')->title()->toString()])]);
+
+    Role::query()->where('name', 'student')->first()
+        ->permissions()
+        ->attach($permissions->only([
+            'view-dashboard',
+            'view-lost-items',
+            'create-lost-items',
+            'update-lost-items',
+            'view-found-items',
+            'claim-found-items',
+            'view-claims',
+            'view-notifications',
+            'manage-notifications',
+        ])->pluck('id'));
+
+    Role::query()->where('name', 'staff')->first()
+        ->permissions()
+        ->attach($permissions->only([
+            'view-dashboard',
+            'view-lost-items',
+            'view-found-items',
+            'create-found-items',
+            'claim-found-items',
+            'view-claims',
+            'view-notifications',
+            'manage-notifications',
+        ])->pluck('id'));
+
+    Role::query()->where('name', 'security_officer')->first()
+        ->permissions()
+        ->attach($permissions->only([
+            'view-dashboard',
+            'view-lost-items',
+            'update-lost-items',
+            'view-found-items',
+            'verify-claims',
+            'view-claims',
+            'view-matches',
+            'manage-lost-found',
+            'view-notifications',
+            'manage-notifications',
+        ])->pluck('id'));
+
+    Role::query()->where('name', 'administrator')->first()
+        ->permissions()
+        ->attach($permissions->pluck('id'));
 
     $this->campus = Campus::query()->create(['name' => 'Main Campus']);
     $this->otherCampus = Campus::query()->create(['name' => 'North Campus']);

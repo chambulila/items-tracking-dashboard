@@ -3,7 +3,7 @@
 @section('title', 'Claim Verification')
 
 @section('content')
-    <div class="card content-card">
+    <div class="card card-outline card-primary">
         <div class="card-header"><h3 class="card-title">Claim Verification Queue</h3></div>
         <div class="card-body table-responsive p-0">
             <table class="table table-striped mb-0">

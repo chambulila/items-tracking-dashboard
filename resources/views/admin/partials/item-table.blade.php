@@ -1,4 +1,4 @@
-<div class="card content-card">
+<div class="card card-outline card-primary">
     <div class="card-body table-responsive p-0">
         <table class="table table-striped mb-0">
             <thead><tr><th>Name</th><th>Category</th><th>Campus</th><th>Date</th><th>Status</th><th>Reported By</th><th></th></tr></thead>

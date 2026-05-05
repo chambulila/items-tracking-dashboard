@@ -17,7 +17,7 @@ class ItemClaimController extends Controller
     {
         $claims = ItemClaim::query()
             ->with(['foundItem', 'claimant'])
-            ->when(! $request->user()->isPrivileged(), fn ($query) => $query->where('claimant_id', $request->user()->id))
+            ->when(! $request->user()->hasPermission('verify-claims', 'manage-lost-found'), fn ($query) => $query->where('claimant_id', $request->user()->id))
             ->latest()
             ->paginate(25);
 

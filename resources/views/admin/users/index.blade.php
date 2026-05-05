@@ -7,7 +7,7 @@
         <div class="alert alert-success">{{ session('status') }}</div>
     @endif
 
-    <div class="card content-card">
+    <div class="card card-outline card-primary">
         <div class="card-header d-flex align-items-center">
             <h3 class="card-title mb-0">User Management</h3>
             <a href="{{ route('admin.users.create') }}" class="btn btn-success btn-sm ms-auto">
