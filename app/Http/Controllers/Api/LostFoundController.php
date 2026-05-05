@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\FoundItem;
 use App\Models\ItemClaim;
+use App\Models\ItemMatch;
 use App\Models\LostItem;
 use App\Services\AttachmentService;
 use App\Services\AuditLogger;
@@ -94,7 +95,7 @@ class LostFoundController extends Controller
 
     public function matches(): JsonResponse
     {
-        return response()->json(\App\Models\ItemMatch::query()->with(['lostItem', 'foundItem'])->latest('score')->paginate(25));
+        return response()->json(ItemMatch::query()->with(['lostItem', 'foundItem'])->latest('score')->paginate(25));
     }
 
     private function itemData(Request $request, string $dateField): array
@@ -109,8 +110,8 @@ class LostFoundController extends Controller
             'brand_model' => ['nullable', 'string', 'max:255'],
             'serial_imei' => ['nullable', 'string', 'max:255'],
             $dateField => ['required', 'date'],
-            'latitude' => ['required', 'numeric', 'between:-90,90'],
-            'longitude' => ['required', 'numeric', 'between:-180,180'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
             'attachments' => ['nullable', 'array'],
             'attachments.*' => ['file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
         ]);

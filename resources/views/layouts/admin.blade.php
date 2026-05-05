@@ -13,10 +13,10 @@
     @php
         $navItems = [
             ['route' => 'admin.dashboard', 'icon' => 'bi-speedometer2', 'label' => 'Dashboard'],
-            ['route' => 'admin.users', 'icon' => 'bi-people', 'label' => 'Users'],
-            ['route' => 'admin.lost-items', 'icon' => 'bi-search', 'label' => 'Lost Items'],
-            ['route' => 'admin.found-items', 'icon' => 'bi-box-seam', 'label' => 'Found Items'],
-            ['route' => 'admin.claims', 'icon' => 'bi-patch-check', 'label' => 'Claims'],
+            ['route' => 'admin.users.index', 'pattern' => 'admin.users.*', 'icon' => 'bi-people', 'label' => 'Users', 'role' => 'administrator'],
+            ['route' => 'admin.lost-items', 'pattern' => 'admin.lost-items*', 'icon' => 'bi-search', 'label' => 'Lost Items'],
+            ['route' => 'admin.found-items', 'pattern' => 'admin.found-items*', 'icon' => 'bi-box-seam', 'label' => 'Found Items'],
+            ['route' => 'admin.claims', 'pattern' => 'admin.claims*', 'icon' => 'bi-patch-check', 'label' => 'Claims'],
             ['route' => 'admin.matches', 'icon' => 'bi-shuffle', 'label' => 'Matches'],
             ['route' => 'admin.notifications', 'icon' => 'bi-bell', 'label' => 'Notifications'],
             ['route' => 'admin.devices', 'icon' => 'bi-phone', 'label' => 'Devices'],
@@ -40,10 +40,21 @@
                     </li>
                 </ul>
                 <ul class="navbar-nav ms-auto">
+                    <li class="nav-item d-none d-md-block">
+                        <span class="nav-link">{{ auth()->user()->name }}</span>
+                    </li>
                     <li class="nav-item">
                         <a href="{{ route('admin.notifications') }}" class="nav-link" aria-label="Notifications">
                             <i class="bi bi-bell"></i>
                         </a>
+                    </li>
+                    <li class="nav-item">
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit" class="btn nav-link border-0" aria-label="Logout">
+                                <i class="bi bi-box-arrow-right"></i>
+                            </button>
+                        </form>
                     </li>
                 </ul>
             </div>
@@ -63,8 +74,9 @@
                 <nav class="mt-2">
                     <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="menu">
                         @foreach ($navItems as $item)
+                            @continue(isset($item['role']) && ! auth()->user()->hasRole($item['role']))
                             <li class="nav-item">
-                                <a href="{{ route($item['route']) }}" class="nav-link @if (request()->routeIs($item['route'])) active @endif">
+                                <a href="{{ route($item['route']) }}" class="nav-link @if (request()->routeIs($item['pattern'] ?? $item['route'])) active @endif">
                                     <i class="nav-icon bi {{ $item['icon'] }}"></i>
                                     <p>{{ $item['label'] }}</p>
                                 </a>
@@ -94,6 +106,14 @@
 
             <div class="app-content">
                 <div class="container-fluid">
+                    @if (session('status'))
+                        <div class="alert alert-success">{{ session('status') }}</div>
+                    @endif
+
+                    @if ($errors->any())
+                        <div class="alert alert-danger">Please check the form and try again.</div>
+                    @endif
+
                     @yield('content')
                 </div>
             </div>
