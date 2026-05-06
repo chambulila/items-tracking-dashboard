@@ -35,7 +35,7 @@
                         <tbody>
                             @forelse ($device->locations as $location)
                                 <tr>
-                                    <td>{{ $location->recorded_at->toDayDateTimeString() }}</td>
+                                    <td>{{ $location->recorded_at->format('D, M j, Y g:i:s A') }}</td>
                                     <td>{{ $location->latitude }}</td>
                                     <td>{{ $location->longitude }}</td>
                                     <td>{{ $location->accuracy ?? '-' }}</td>
@@ -89,7 +89,7 @@
                         <dt class="col-sm-5">Battery</dt>
                         <dd class="col-sm-7">{{ $device->last_battery_level !== null ? $device->last_battery_level.'%' : '-' }}</dd>
                         <dt class="col-sm-5">Last Seen</dt>
-                        <dd class="col-sm-7">{{ $device->last_seen_at?->toDayDateTimeString() ?? 'Never' }}</dd>
+                        <dd class="col-sm-7">{{ $device->last_seen_at?->format('D, M j, Y g:i:s A') ?? 'Never' }}</dd>
                         <dt class="col-sm-5">Connection</dt>
                         <dd class="col-sm-7"><span class="badge {{ $device->isOnline() ? 'text-bg-success' : 'text-bg-secondary' }}">{{ $device->isOnline() ? 'Online' : 'Offline' }}</span></dd>
                     </dl>
@@ -151,13 +151,29 @@
         const points = [];
         let latestMarker = null;
 
+        function formatLocationTime(value) {
+            if (!value) {
+                return '';
+            }
+
+            return new Date(value).toLocaleString(undefined, {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+                second: '2-digit',
+            });
+        }
+
         function addLocationMarker(location) {
             const marker = L.circleMarker([location.latitude, location.longitude], {
                 color: location.tracking_mode === 'live' ? '#dc3545' : '#0d6efd',
                 fillColor: location.tracking_mode === 'live' ? '#dc3545' : '#0d6efd',
                 fillOpacity: 0.7,
                 radius: location.tracking_mode === 'live' ? 7 : 5,
-            }).addTo(map).bindPopup(`${location.tracking_mode ?? 'heartbeat'} · ${location.recorded_at ?? ''}`);
+            }).addTo(map).bindPopup(`${location.tracking_mode ?? 'heartbeat'} - ${formatLocationTime(location.recorded_at)}`);
             points.push([Number(location.latitude), Number(location.longitude)]);
             return marker;
         }
