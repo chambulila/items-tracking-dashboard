@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DeviceController;
 use App\Http\Controllers\Api\IncidentController;
 use App\Http\Controllers\Api\LostFoundController;
+use App\Http\Controllers\Api\MobileDeviceController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ReferenceController;
 use Illuminate\Support\Facades\Route;
@@ -25,12 +26,12 @@ Route::middleware('api.token')->group(function (): void {
     Route::post('/found-items', [LostFoundController::class, 'storeFound'])->middleware('permission:create-found-items');
     Route::post('/found-items/{foundItem}/claims', [LostFoundController::class, 'claim'])->middleware('permission:claim-found-items');
 
-    Route::get('/devices', [DeviceController::class, 'index'])->middleware('permission:view-devices');
-    Route::post('/devices', [DeviceController::class, 'store'])->middleware('permission:manage-devices');
-    Route::get('/devices/{device}', [DeviceController::class, 'show'])->middleware('permission:view-devices');
-    Route::patch('/devices/{device}', [DeviceController::class, 'updateStatus'])->middleware('permission:manage-devices');
-    Route::get('/devices/{device}/status', [DeviceController::class, 'status'])->middleware('permission:view-devices');
-    Route::post('/devices/{device}/location', [DeviceController::class, 'location'])->middleware('permission:manage-devices');
+    Route::get('/devices', [DeviceController::class, 'index'])->middleware('permission:view-devices,manage-devices');
+    Route::post('/devices', [DeviceController::class, 'store'])->middleware('permission:create-devices,manage-devices');
+    Route::get('/devices/{device}', [DeviceController::class, 'show'])->middleware('permission:view-devices,manage-devices');
+    Route::patch('/devices/{device}', [DeviceController::class, 'updateStatus'])->middleware('permission:manage-device-tracking,manage-devices');
+    Route::get('/devices/{device}/status', [DeviceController::class, 'status'])->middleware('permission:view-devices,manage-devices');
+    Route::post('/devices/{device}/location', [DeviceController::class, 'location'])->middleware('permission:send-device-location,manage-devices');
 
     Route::get('/incidents', [IncidentController::class, 'index'])->middleware('permission:view-incidents');
     Route::post('/incidents', [IncidentController::class, 'store'])->middleware('permission:create-incidents');
@@ -38,6 +39,12 @@ Route::middleware('api.token')->group(function (): void {
 
     Route::get('/notifications', [NotificationController::class, 'index'])->middleware('permission:view-notifications');
     Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->middleware('permission:manage-notifications');
+
+    Route::post('/mobile/devices/sync', [MobileDeviceController::class, 'sync']);
+    Route::get('/mobile/devices/{device_uuid}/status', [MobileDeviceController::class, 'status']);
+    Route::post('/mobile/devices/{device_uuid}/location', [MobileDeviceController::class, 'location']);
+    Route::post('/mobile/devices/{device_uuid}/fcm-token', [MobileDeviceController::class, 'fcmToken']);
+    Route::post('/mobile/devices/{device_uuid}/permission-status', [MobileDeviceController::class, 'permissionStatus']);
 
     Route::middleware('permission:verify-claims,manage-lost-found')->group(function (): void {
         Route::patch('/claims/{claim}/verify', [LostFoundController::class, 'verifyClaim']);

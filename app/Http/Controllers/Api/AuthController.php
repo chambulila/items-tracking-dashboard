@@ -24,7 +24,7 @@ class AuthController extends Controller
         $user = User::query()->create($data);
         $role = Role::query()->firstOrCreate(['name' => 'student'], ['label' => 'Student']);
         $user->roles()->syncWithoutDetaching($role);
-        $token = $user->refreshApiToken();
+        $token = $user->createToken('mobile-tracker')->plainTextToken;
 
         return response()->json(['token' => $token, 'user' => $user->load('roles')], 201);
     }
@@ -42,7 +42,7 @@ class AuthController extends Controller
             throw ValidationException::withMessages(['email' => 'Invalid credentials.']);
         }
 
-        return response()->json(['token' => $user->refreshApiToken(), 'user' => $user->fresh('roles')]);
+        return response()->json(['token' => $user->createToken('mobile-tracker')->plainTextToken, 'user' => $user->fresh('roles')]);
     }
 
     public function profile(Request $request): JsonResponse
@@ -65,6 +65,7 @@ class AuthController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
+        $request->user()?->currentAccessToken()?->delete();
         $request->user()->forceFill(['api_token' => null])->save();
 
         return response()->json(['message' => 'Logged out.']);

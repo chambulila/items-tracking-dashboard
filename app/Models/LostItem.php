@@ -63,4 +63,9 @@ class LostItem extends Model
     {
         return $this->morphMany(Attachment::class, 'attachable');
     }
+
+    public function devices(): HasMany
+    {
+        return $this->hasMany(Device::class);
+    }
 }

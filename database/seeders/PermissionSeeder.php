@@ -42,7 +42,10 @@ class PermissionSeeder extends Seeder
             ],
             'devices' => [
                 'view-devices' => 'View tracking devices',
-                'manage-devices' => 'Register and update tracking devices',
+                'create-devices' => 'Register eligible electronic devices',
+                'send-device-location' => 'Send mobile device location updates',
+                'manage-device-tracking' => 'Enable, disable, and recover device tracking',
+                'manage-devices' => 'Manage all registered devices',
             ],
             'analytics' => [
                 'view-analytics' => 'View analytics and reports',

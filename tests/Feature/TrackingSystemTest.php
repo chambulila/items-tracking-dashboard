@@ -36,6 +36,9 @@ beforeEach(function (): void {
         'view-matches',
         'manage-lost-found',
         'view-devices',
+        'create-devices',
+        'send-device-location',
+        'manage-device-tracking',
         'manage-devices',
         'view-incidents',
         'create-incidents',
@@ -55,7 +58,8 @@ beforeEach(function (): void {
             'create-found-items',
             'claim-found-items',
             'view-devices',
-            'manage-devices',
+            'create-devices',
+            'send-device-location',
             'view-incidents',
             'create-incidents',
             'view-notifications',
@@ -71,6 +75,9 @@ beforeEach(function (): void {
             'view-incidents',
             'manage-incidents',
             'view-analytics',
+            'view-devices',
+            'manage-devices',
+            'manage-device-tracking',
         ])->pluck('id'));
 
     Role::query()->where('name', 'administrator')->first()
@@ -207,9 +214,11 @@ it('requires security or admin approval for claims', function (): void {
 
 it('only accepts device locations while tracking is enabled and the device is lost', function (): void {
     [, $token] = userWithRole('student');
+    [, $adminToken] = userWithRole('administrator');
 
     $deviceId = $this->postJson('/api/devices', [
         'name' => 'Phone',
+        'device_type' => 'phone',
         'device_identifier' => 'phone-001',
     ], authHeaders($token))->assertCreated()->json('id');
 
@@ -225,19 +234,34 @@ it('only accepts device locations while tracking is enabled and the device is lo
     $this->patchJson("/api/devices/{$deviceId}", [
         'tracking_enabled' => true,
         'is_lost' => true,
-    ], authHeaders($token))->assertSuccessful();
+    ], authHeaders($token))->assertForbidden();
+
+    $this->patchJson("/api/devices/{$deviceId}", [
+        'tracking_enabled' => true,
+        'is_lost' => true,
+    ], authHeaders($adminToken))->assertSuccessful()
+        ->assertJsonPath('tracking_enabled', true)
+        ->assertJsonPath('is_lost', true);
 
     $this->postJson("/api/devices/{$deviceId}/location", [
         'latitude' => -6.7924,
         'longitude' => 39.2083,
         'accuracy' => 5,
+        'speed' => 3.2,
+        'battery_level' => 71,
     ], authHeaders($token))->assertCreated();
 
     $this->patchJson("/api/devices/{$deviceId}", [
         'is_lost' => false,
-    ], authHeaders($token))->assertJsonPath('tracking_enabled', false);
+    ], authHeaders($adminToken))->assertJsonPath('tracking_enabled', false);
 
-    expect(Device::query()->first()->locations()->count())->toBe(1);
+    $device = Device::query()->first();
+
+    expect($device->locations()->count())->toBe(1)
+        ->and($device->latitude)->not->toBeNull()
+        ->and($device->longitude)->not->toBeNull()
+        ->and($device->last_seen_at)->not->toBeNull()
+        ->and(AuditLog::query()->where('action', 'device.status_changed')->exists())->toBeTrue();
 });
 
 it('enforces incident transitions, assignment, and audit history', function (): void {
