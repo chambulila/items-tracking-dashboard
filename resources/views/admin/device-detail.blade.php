@@ -32,9 +32,9 @@
                                 <th>Battery</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="location-history-body">
                             @forelse ($device->locations as $location)
-                                <tr>
+                                <tr data-location-id="{{ $location->id }}">
                                     <td>{{ $location->recorded_at->format('D, M j, Y g:i:s A') }}</td>
                                     <td>{{ $location->latitude }}</td>
                                     <td>{{ $location->longitude }}</td>
@@ -43,7 +43,7 @@
                                     <td>{{ $location->battery_level !== null ? $location->battery_level.'%' : '-' }}</td>
                                 </tr>
                             @empty
-                                <tr>
+                                <tr id="empty-location-row">
                                     <td colspan="6" class="text-center text-muted py-4">No location updates have been received.</td>
                                 </tr>
                             @endforelse
@@ -146,10 +146,15 @@
     <script>
         const latest = @json($device->latestLocation);
         const latestUrl = @json(route('admin.devices.latest-location', $device));
+        const locationsUrl = @json(route('admin.devices.locations', $device));
+        let trackingEnabled = @json($device->tracking_enabled);
         const map = L.map('map').setView([latest?.latitude ?? -6.7924, latest?.longitude ?? 39.2083], latest ? 16 : 12);
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
         const points = [];
+        const renderedLocationIds = new Set();
         let latestMarker = null;
+        let trail = null;
+        let lastLocationId = 0;
 
         function formatLocationTime(value) {
             if (!value) {
@@ -167,7 +172,49 @@
             });
         }
 
-        function addLocationMarker(location) {
+        function normalizedLocationId(location) {
+            return Number(location.id ?? 0);
+        }
+
+        function formatValue(value, fallback = '-') {
+            return value === null || value === undefined || value === '' ? fallback : value;
+        }
+
+        function formatBattery(value) {
+            return value === null || value === undefined ? '-' : `${value}%`;
+        }
+
+        function updateLatestMarker(location, shouldPan = false) {
+            const latLng = [Number(location.latitude), Number(location.longitude)];
+            if (latestMarker) {
+                latestMarker.setLatLng(latLng);
+            } else {
+                latestMarker = L.marker(latLng).addTo(map).bindPopup('Latest location');
+            }
+
+            if (shouldPan) {
+                map.panTo(latLng);
+            }
+        }
+
+        function redrawTrail() {
+            if (trail) {
+                map.removeLayer(trail);
+                trail = null;
+            }
+
+            if (points.length > 1) {
+                trail = L.polyline(points, { color: '#198754', weight: 3 }).addTo(map);
+            }
+        }
+
+        function addLocationMarker(location, shouldPan = false) {
+            const id = normalizedLocationId(location);
+            if (id && renderedLocationIds.has(id)) {
+                updateLatestMarker(location, shouldPan);
+                return;
+            }
+
             const marker = L.circleMarker([location.latitude, location.longitude], {
                 color: location.tracking_mode === 'live' ? '#dc3545' : '#0d6efd',
                 fillColor: location.tracking_mode === 'live' ? '#dc3545' : '#0d6efd',
@@ -175,19 +222,79 @@
                 radius: location.tracking_mode === 'live' ? 7 : 5,
             }).addTo(map).bindPopup(`${location.tracking_mode ?? 'heartbeat'} - ${formatLocationTime(location.recorded_at)}`);
             points.push([Number(location.latitude), Number(location.longitude)]);
+            updateLatestMarker(location, shouldPan);
+
+            if (id) {
+                renderedLocationIds.add(id);
+                lastLocationId = Math.max(lastLocationId, id);
+            }
+
+            redrawTrail();
             return marker;
         }
 
-        @foreach ($device->locations as $location)
+        function prependLocationRow(location) {
+            const id = normalizedLocationId(location);
+            if (id && document.querySelector(`[data-location-id="${id}"]`)) {
+                return;
+            }
+
+            document.getElementById('empty-location-row')?.remove();
+
+            const row = document.createElement('tr');
+            if (id) {
+                row.dataset.locationId = String(id);
+            }
+            row.classList.add('table-success');
+            row.innerHTML = `
+                <td>${formatLocationTime(location.recorded_at)}</td>
+                <td>${formatValue(location.latitude)}</td>
+                <td>${formatValue(location.longitude)}</td>
+                <td>${formatValue(location.accuracy)}</td>
+                <td>${formatValue(location.speed)}</td>
+                <td>${formatBattery(location.battery_level)}</td>
+            `;
+
+            const body = document.getElementById('location-history-body');
+            body.prepend(row);
+
+            setTimeout(() => row.classList.remove('table-success'), 2500);
+        }
+
+        @foreach ($device->locations->sortBy([['recorded_at', 'asc'], ['id', 'asc']]) as $location)
             addLocationMarker(@json($location));
         @endforeach
 
-        if (points.length > 1) {
-            L.polyline(points, { color: '#198754', weight: 3 }).addTo(map);
+        if (latest) {
+            updateLatestMarker(latest);
         }
 
-        if (latest) {
-            latestMarker = L.marker([latest.latitude, latest.longitude]).addTo(map).bindPopup('Latest location');
+        async function refreshDeviceLocations() {
+            if (!trackingEnabled) {
+                return;
+            }
+
+            const url = new URL(locationsUrl, window.location.origin);
+            if (lastLocationId > 0) {
+                url.searchParams.set('since_id', lastLocationId);
+            }
+
+            const response = await fetch(url, { headers: { Accept: 'application/json' } });
+            if (!response.ok) {
+                return;
+            }
+
+            const payload = await response.json();
+            const locations = payload.data ?? [];
+
+            if (!locations.length) {
+                return;
+            }
+
+            locations.forEach((location, index) => {
+                addLocationMarker(location, index === locations.length - 1);
+                prependLocationRow(location);
+            });
         }
 
         async function refreshLatestLocation() {
@@ -196,18 +303,15 @@
                 return;
             }
             const payload = await response.json();
-            const location = payload.latest_location;
-            if (!location) {
-                return;
-            }
-            const latLng = [Number(location.latitude), Number(location.longitude)];
-            if (latestMarker) {
-                latestMarker.setLatLng(latLng);
-            } else {
-                latestMarker = L.marker(latLng).addTo(map).bindPopup('Latest location');
+            if (payload.latest_location) {
+                trackingEnabled = Boolean(payload.device?.tracking_enabled);
+                updateLatestMarker(payload.latest_location);
+            } else if (payload.device) {
+                trackingEnabled = Boolean(payload.device.tracking_enabled);
             }
         }
 
-        setInterval(refreshLatestLocation, 10000);
+        setInterval(refreshDeviceLocations, 5000);
+        setInterval(refreshLatestLocation, 15000);
     </script>
 @endpush

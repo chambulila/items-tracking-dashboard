@@ -158,7 +158,7 @@ it('lets tracking managers enable disable and recover devices from the web dashb
         ->and(AuditLog::query()->where('action', 'device.recovered')->where('user_id', $security->id)->exists())->toBeTrue();
 });
 
-it('syncs a mobile device by uuid and accepts heartbeat while live updates require active search', function (): void {
+it('syncs a mobile device by uuid and rejects location updates while tracking is disabled', function (): void {
     $owner = deviceTrackingUserWithRole('student');
     $security = deviceTrackingUserWithRole('security_officer');
 
@@ -188,8 +188,8 @@ it('syncs a mobile device by uuid and accepts heartbeat while live updates requi
         'battery_level' => 80,
         'tracking_mode' => 'heartbeat',
         'recorded_at' => now()->toIso8601String(),
-    ], deviceTrackingAuthHeaders($owner))->assertCreated()
-        ->assertJsonPath('tracking_mode', 'heartbeat');
+    ], deviceTrackingAuthHeaders($owner))->assertUnprocessable()
+        ->assertJsonPath('message', 'Tracking is disabled for this device.');
 
     $this->postJson('/api/mobile/devices/uuid-001/location', [
         'latitude' => -6.7925,
@@ -211,5 +211,14 @@ it('syncs a mobile device by uuid and accepts heartbeat while live updates requi
     expect($device->fresh()->last_latitude)->not->toBeNull()
         ->and($device->fresh()->last_longitude)->not->toBeNull()
         ->and($device->fresh()->last_seen_at)->not->toBeNull()
-        ->and($device->locations()->count())->toBe(2);
+        ->and($device->locations()->count())->toBe(1);
+
+    $this->actingAs($security)->patch(route('admin.devices.disable-tracking', $device))->assertRedirect();
+
+    $this->postJson('/api/mobile/devices/uuid-001/location', [
+        'latitude' => -6.7926,
+        'longitude' => 39.2085,
+        'tracking_mode' => 'live',
+    ], deviceTrackingAuthHeaders($owner))->assertUnprocessable()
+        ->assertJsonPath('message', 'Tracking is disabled for this device.');
 });

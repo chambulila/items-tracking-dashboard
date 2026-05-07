@@ -49,7 +49,7 @@ class DeviceTrackingService
             $device->update([
                 'tracking_enabled' => false,
                 'is_lost' => false,
-                'tracking_mode' => 'heartbeat',
+                'tracking_mode' => 'idle',
                 'active_search_ended_at' => now(),
             ]);
 

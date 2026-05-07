@@ -86,6 +86,10 @@ class MobileDeviceController extends Controller
             'recorded_at' => ['nullable', 'date'],
         ]);
 
+        if (! $device->tracking_enabled) {
+            return response()->json(['message' => 'Tracking is disabled for this device.'], 422);
+        }
+
         if ($data['tracking_mode'] === 'live' && ! $device->shouldSendLocation()) {
             return response()->json(['message' => 'Live tracking is disabled for this device.'], 422);
         }

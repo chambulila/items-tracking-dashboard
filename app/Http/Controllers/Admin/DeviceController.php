@@ -50,12 +50,18 @@ class DeviceController extends Controller
 
     public function locations(Device $device): JsonResponse
     {
+        $query = $device->locations()
+            ->oldest('recorded_at')
+            ->oldest('id');
+
+        if (request()->filled('since_id')) {
+            $query->where('id', '>', request()->integer('since_id'));
+        }
+
         return response()->json([
-            'data' => $device->locations()
-                ->latest('recorded_at')
+            'data' => $query
                 ->limit(100)
                 ->get()
-                ->reverse()
                 ->values(),
         ]);
     }
